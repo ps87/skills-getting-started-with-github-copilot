@@ -1,4 +1,6 @@
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import pytest
 from fastapi.testclient import TestClient
@@ -99,6 +101,30 @@ def test_signup_rejects_full_activity(client):
     # Assert
     assert response.status_code == 400
     assert response.json()["detail"] == "Activity is full"
+
+
+def test_concurrent_signups_do_not_exceed_activity_capacity(client):
+    # Arrange
+    activity_name = "Soccer Club"
+    activity = app_module.activities[activity_name]
+    activity["max_participants"] = 1
+    start_barrier = Barrier(8)
+
+    def signup(index):
+        start_barrier.wait()
+        return client.post(
+            f"/activities/{activity_name}/signup",
+            params={"email": f"student{index}@example.com"},
+        )
+
+    # Act
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        responses = list(executor.map(signup, range(8)))
+
+    # Assert
+    assert sum(response.status_code == 200 for response in responses) == 1
+    assert sum(response.status_code == 400 for response in responses) == 7
+    assert len(activity["participants"]) == 1
 
 
 def test_unregister_removes_participant(client):
