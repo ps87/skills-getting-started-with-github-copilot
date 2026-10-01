@@ -63,9 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(result.detail || "Unable to remove participant");
               }
 
-              participant.remove();
-              activityCard.querySelector(".activity-availability").innerHTML =
-                `<strong>Availability:</strong> ${spotsLeft + 1} spots left`;
+participant.remove();
+activityCard.querySelector(".activity-availability").innerHTML =
+  `<strong>Availability:</strong> ${details.max_participants - participantsList.children.length} spots left`;
             } catch (error) {
               removeButton.disabled = false;
               messageDiv.textContent = error.message || "Failed to remove participant";
